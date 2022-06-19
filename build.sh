@@ -15,29 +15,33 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-INPUT="bsect.asm"
-OUTPUT="disk"
-KERN="./barebones"
-RD="./big.init"
+INPUT="bflop.asm"
+OUTPUT="disk.img"
+KERN="../bzImage"
+#RD="./big.init"
 
 #size of kern + ramdisk
 K_SZ=`stat -c %s $KERN`
-R_SZ=`stat -c %s $RD`
+#R_SZ=`stat -c %s $RD`
 
 #padding to make it up to a sector
 K_PAD=$((512 - $K_SZ % 512))
-R_PAD=$((512 - $R_SZ % 512))
+#R_PAD=$((512 - $R_SZ % 512))
 
 nasm -o $OUTPUT -D initRdSizeDef=$R_SZ $INPUT
+cp $OUTPUT bootloader.bin
+
 cat $KERN >> $OUTPUT
 if [[ $K_PAD -lt 512 ]]; then
     dd if=/dev/zero bs=1 count=$K_PAD >> $OUTPUT
 fi
 
-cat $RD >> $OUTPUT
-if [[ $R_PAD -lt 512 ]]; then
-    dd if=/dev/zero bs=1 count=$R_PAD >> $OUTPUT
-fi
+#cat $RD >> $OUTPUT
+#if [[ $R_PAD -lt 512 ]]; then
+#    dd if=/dev/zero bs=1 count=$R_PAD >> $OUTPUT
+#fi
+
+objdump -b binary --adjust-vma=0x7c00 -D bootloader.bin -m i8086 -M intel > objdump_out.objdump
 
 TOTAL=`stat -c %s $OUTPUT`
 echo "concatenated bootloader, kernel and initrd into ::> $OUTPUT"
