@@ -41,9 +41,15 @@ fi
 #    dd if=/dev/zero bs=1 count=$R_PAD >> $OUTPUT
 #fi
 
+# make an objdump of the bootloader for debugging purposes
 objdump -b binary --adjust-vma=0x7c00 -D bootloader.bin -m i8086 -M intel > objdump_out.objdump
 
 TOTAL=`stat -c %s $OUTPUT`
+if [[ $TOTAL -gt 1474560 ]]; then
+    echo "Warning: Floppy image exceeds 1.44mb!!!"
+else
+    dd if=/dev/zero bs=1 count=$((1474560 - $TOTAL)) >> $OUTPUT
+fi
 echo "concatenated bootloader, kernel and initrd into ::> $OUTPUT"
-echo "Note, your first partition must start after sector $(($TOTAL / 512))"
+#echo "Note, your first partition must start after sector $(($TOTAL / 512))"
 

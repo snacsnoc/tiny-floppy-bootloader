@@ -3,3 +3,14 @@ set architecture i8086
 target remote localhost:1234
 layout split
 break *0x7c00
+break *0x7d41
+break *0x7cbf
+
+display/xh 0x7d63
+
+define xxd
+dump binary memory /tmp/dump.bin $arg0 $arg0+$arg1
+echo \n
+shell xxd -o $arg0 /tmp/dump.bin
+echo \n
+end

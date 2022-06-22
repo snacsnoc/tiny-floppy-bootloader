@@ -8,5 +8,9 @@
 %define nCylindersPerHeadDef 80 
 %define nSectorsPerTrackDef 18 
 
+; qemu emulates a 2.88mb floppy drive by default -- if you get "read err", try this:
+; (i haven't figured out how to get it to use 1.44mb
+;%define nSectorsPerTrackDef 36
+
 ;initRdSizeDef - defined in build script automatically
 

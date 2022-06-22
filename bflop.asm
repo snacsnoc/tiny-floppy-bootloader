@@ -223,6 +223,7 @@ print.end:
     ret
 %endif
 
+flSect dw 1 ; start sector (this is zero-indexed)
 flopread:
     push eax
     push es
@@ -241,16 +242,21 @@ flopread:
 .loop:
 ; HPC = 2
 ; SPT = 18
+    ; 
     ;
     ; convert sectors to CHS
     ; adapted from kolibrios 
     ; (https://github.com/Harmon758/kolibrios/blob/master/kernel/trunk/bootloader/boot_fat12.asm)
+    ; sector number = (flSect % sectors_per_track) + 1
+    ; pre.track number = (flSect/ sectors_per_track)
+    ; head number = pre.track number % number of heads
+    ; track number = pre.track number / number of heads
     push bx
     mov ax, word [flSect]
     mov bx, nSectorsPerTrackDef
     xor dx, dx
     div bx
-    inc dx
+    inc dx ; 
     mov cl, dl  ; cl -- sector number
     mov bx, 0x2 ; num heads fixed to 2
     xor dx, dx
@@ -261,10 +267,30 @@ flopread:
     pop bx
 
 
+
+    ; so cx has an absolutely Cursed layout
+    ; (see http://www.techhelpmanual.com/188-int_13h_02h__read_sectors.html)
+    ; so we need to do some Funky Things 
+    ; (thank you ibm i hate this)
+    ; (this approach does not suppoprt more than 255 cylinders)
+    mov al, cl ; temp move sector number to al
+    and al, 0x3f ; lop off the top 2 bits
+    ;mov cl, ch ; copy the track number to cl so we get the top two bits
+    and cl, 0xc0 ; lop off the bottom 6 bits 
+    ;shl ch, 2 ; adjust ch to move bits 0-5 into place
+    or cl, al ; add the sector number back in
+
+
     xor dl, dl ; read from first floppy -- this may not be necessary
     mov al, 0x01 ; read 1 sector
     mov ah, 0x02 ; 
+    push bx 
+    push cx 
+    push dx
     int 0x13
+    pop dx
+    pop cx
+    pop bx
     jc err_read
 
     mov ax, word [flSect] ; increment floppy sector counter
@@ -277,6 +303,7 @@ flopread:
     
     
     jnz flopread.loop
+flopread.finish:
     pop es
     pop eax
     ret
@@ -310,7 +337,6 @@ gdt_end:
     cmdLineLen equ $-cmdLine
     ;initRdSize dd initRdSizeDef ; from config.inc
     ;hddLBA db 1   ; start address for kernel - subsequent calls are sequential
-    flSect dw 1 ; start sector (this is zero-indexed)
 
     ; see config.inc for more info
     ;nCylinders dw nCylindersPerHeadDef
