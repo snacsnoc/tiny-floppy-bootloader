@@ -83,9 +83,9 @@ read_kernel_setup:
     call flopread
 
     cmp word [es:0x206], 0x204 ; require protocol 2.04+ 
-    jb err
+    jb errK
     test byte [es:0x211], 1 ; make sure the real mode loader _actually_ wants to be at 0x10000
-    jz err
+    jz errK
 
     mov byte [es:0x210], 0xe1 ;loader type we set this ourselves
     mov byte [es:0x211], 0x81 ;heap use? !! SET Bit5 to Make Kern Quiet
@@ -199,6 +199,13 @@ err:
 %endif
     jmp $
 
+errK:
+%ifdef DEBUG
+    mov si, errStrK
+    call print
+%endif
+    jmp $
+
 err_read:
 %ifdef DEBUG
     mov si, errStrRead
@@ -206,7 +213,9 @@ err_read:
 %endif
     jmp $
 
+errStr db 'a20err!!',0
 errStrRead db 'read err!!',0
+errStrK db 'krnlerr!!',0
 
 
 %ifdef DEBUG
@@ -327,10 +336,6 @@ gdt:
     db 11001111b    ; [7..4]= flags [3..0] = limit[16:19]
     db 0 ; base[24:31]
 gdt_end:
-
-%ifdef DEBUG
-    errStr db 'err!!',0
-%endif
 
 ; config options
     cmdLine db cmdLineDef,0
