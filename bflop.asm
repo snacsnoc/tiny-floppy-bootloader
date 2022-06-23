@@ -156,6 +156,9 @@ loader:
     push edx
     call flopread
     call highmove
+
+    mov si, pstr
+    call print
     pop edx
     sub edx, 127*512
 
@@ -216,6 +219,7 @@ err_read:
 errStr db 'a20err!!',0
 errStrRead db 'read err!!',0
 errStrK db 'krnlerr!!',0
+pstr db 'B',0
 
 
 %ifdef DEBUG
@@ -284,15 +288,20 @@ flopread:
     ; (this approach does not suppoprt more than 255 cylinders)
     mov al, cl ; temp move sector number to al
     and al, 0x3f ; lop off the top 2 bits
-    ;mov cl, ch ; copy the track number to cl so we get the top two bits
     and cl, 0xc0 ; lop off the bottom 6 bits 
-    ;shl ch, 2 ; adjust ch to move bits 0-5 into place
     or cl, al ; add the sector number back in
 
 
     xor dl, dl ; read from first floppy -- this may not be necessary
     mov al, 0x01 ; read 1 sector
     mov ah, 0x02 ; 
+
+    push si
+    mov si, 20 ; set floppy retry counter
+flopread.retry:
+    dec si
+    jz err_read
+    push ax
     push bx 
     push cx 
     push dx
@@ -300,7 +309,9 @@ flopread:
     pop dx
     pop cx
     pop bx
-    jc err_read
+    pop ax
+    jc flopread.retry
+    pop si
 
     mov ax, word [flSect] ; increment floppy sector counter
     inc ax
@@ -309,7 +320,6 @@ flopread:
     add bx, 512 ; increment offset
     dec si ; decrement number of sects to read
 
-    
     
     jnz flopread.loop
 flopread.finish:
