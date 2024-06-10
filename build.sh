@@ -31,9 +31,16 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Determine stat command based on OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    STAT_COMMAND="stat -f%z"
+else
+    STAT_COMMAND="stat -c%s"
+fi
 
 #size of kern + ramdisk
-K_SZ=`stat -c %s $KERN`
+K_SZ=$($STAT_COMMAND $KERN)
+
 #R_SZ=`stat -c %s $RD`
 
 #padding to make it up to a sector
@@ -58,7 +65,7 @@ if [ "$GENERATE_OBJDUMP" = true ]; then
     ${CROSS_COMPILE}objdump -b binary --adjust-vma=0x7c00 -D bootloader.bin -m i386 -M intel > objdump_out.objdump
 fi
 
-TOTAL=`stat -c %s $OUTPUT`
+TOTAL=$($STAT_COMMAND $OUTPUT)
 if [[ $TOTAL -gt 1474560 ]]; then
     echo "Warning: Floppy image exceeds 1.44mb!!!"
 else
