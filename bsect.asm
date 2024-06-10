@@ -165,21 +165,16 @@ loader:
 highmove_addr dd 0x100000
 ; source = 0x2000
 ; count = 127*512  fixed, doesn't if matter we copy junk at end
-; don't think we can use rep movsb here as it wont use EDI/ESI in unreal mode
+; we can use rep movsd here as EDI/ESI will work correctly in unreal mode
+; as long as segment descriptors have been set up to allow access beyond 1MB
 highmove:
-    mov esi, 0x20000
+    mov esi, 0x2000
     mov edi, [highmove_addr]
-    mov edx, 512*127
-    mov ecx, 0 ; pointer
-.loop:
-    mov eax, [ds:esi]
-    mov [ds:edi], eax
-    add esi, 4
-    add edi, 4
-    sub edx, 4
-    jnz highmove.loop
+    mov ecx, 127 * 512 / 4  ; 512 bytes * 127 sectors / 4 bytes per dword
+rep movsd
     mov [highmove_addr], edi
     ret
+
 
 err:
 %ifdef DEBUG
