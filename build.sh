@@ -17,8 +17,20 @@
 
 INPUT="bflop.asm"
 OUTPUT="disk.img"
-KERN="../bzImage"
+KERN="./bzImage"
 #RD="./big.init"
+CROSS_COMPILE=${CROSS_COMPILE:-""}
+GENERATE_OBJDUMP=false
+
+# Parse Arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --objdump) GENERATE_OBJDUMP=true ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
 
 #size of kern + ramdisk
 K_SZ=`stat -c %s $KERN`
@@ -42,7 +54,9 @@ fi
 #fi
 
 # make an objdump of the bootloader for debugging purposes
-objdump -b binary --adjust-vma=0x7c00 -D bootloader.bin -m i8086 -M intel > objdump_out.objdump
+if [ "$GENERATE_OBJDUMP" = true ]; then
+    ${CROSS_COMPILE}objdump -b binary --adjust-vma=0x7c00 -D bootloader.bin -m i386 -M intel > objdump_out.objdump
+fi
 
 TOTAL=`stat -c %s $OUTPUT`
 if [[ $TOTAL -gt 1474560 ]]; then
