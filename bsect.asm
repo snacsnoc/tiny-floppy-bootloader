@@ -125,7 +125,7 @@ kernel_start:
     mov gs, ax
     mov ss, ax
     mov sp, 0xe000
-    jmp 0x1020:0
+    jmp 0x08:kernel_entry
 
     jmp $
 
